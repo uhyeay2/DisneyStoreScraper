@@ -50,7 +50,7 @@ namespace DisneyStoreScraper
         /// Wait to see if an IWebElement is found and return true if able to find and click the web element. Returns the IWebElement if it is found.
         /// </summary>
         /// <returns>IsClicked will be true if the IWebElement is found and clicked. IsClicked will be false if the element is not found or cannot be clicked. WebElement will be null if not found. </returns>
-        public static (bool IsClicked, IWebElement? WebElement) WaitToClickButton(this IWebDriver driver, TimeSpan timeout, Func<IWebDriver, IWebElement> func)
+        public static (bool IsClicked, IWebElement? WebElement) WaitToClickElement(this IWebDriver driver, TimeSpan timeout, Func<IWebDriver, IWebElement> func)
         {
             var (isFound, element) = driver.WaitToGetWebElement(timeout, func);
 

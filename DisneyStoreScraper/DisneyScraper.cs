@@ -56,45 +56,38 @@ namespace DisneyStoreScraper
         {
             try
             {
-                Console.WriteLine("Looking for search box.");
+                var (searchBoxClicked, _) = ClickElementHelper.TryToClickWithConsoleLogs(_driver, "Search Box", TimeSpan.FromSeconds(2), 
+                    _ => _.FindElement(By.XPath("//section[@class='siteSearch']/button")));
 
-                // click search button
-                var searchBoxElement = _driver.FindElement(By.XPath("//section[@class='siteSearch']/button"));
-
-                Console.WriteLine("Clicking search box.");
-                new Actions(_driver).Click(searchBoxElement).Perform();
-
-                Console.WriteLine("Looking for form input to insert textToSearchFor.");
-                var (searchTextBoxFound, searchTextBoxElement) = _driver.WaitToGetWebElement(TimeSpan.FromSeconds(2), _ => _.FindElement(By.XPath("//form[@role='search']/div/input[@type='search']")));
-
-                if (searchTextBoxFound)
+                if (!searchBoxClicked)
                 {
-                    Console.WriteLine("Clicking field to enter text into search box.");
-                    new Actions(_driver).Click(searchTextBoxElement).Perform();
-
-                    Console.WriteLine("Entering text to search for into form input.");
-                    searchTextBoxElement!.SendKeys(textToSearchFor);
-
-                    // click Search button
-                    Console.WriteLine("Looking for search button");
-
-                    var (searchButtonFound, searchButtonElement) = _driver.WaitToGetWebElement(TimeSpan.FromSeconds(2), _ => _.FindElement(By.XPath("//form[@role='search']/div/button")));
-
-                    if (searchButtonFound)
-                    {
-                        Console.WriteLine("Clicking button to search");
-                        new Actions(_driver).Click(searchButtonElement).Perform();
-                        return true;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Could not find search button to submit text to search for.");
-                    }
+                    return false;
                 }
-                else
+
+                var (searchFormClicked, searchFormElement) = ClickElementHelper.TryToClickWithConsoleLogs(_driver, $"Form To Input Text: {textToSearchFor}", TimeSpan.FromSeconds(2), 
+                    _ => _.FindElement(By.XPath("//form[@role='search']/div/input[@type='search']")));
+                
+                if(!searchFormClicked)
                 {
-                    Console.WriteLine("Could not find text box to enter text to search for.");
+                    return false;
                 }
+
+                Console.WriteLine($"\nSending Keys To Text Input: {textToSearchFor}");
+                try
+                {
+                    searchFormElement!.SendKeys(textToSearchFor);
+                    Console.WriteLine("Text Entered Into Form Input.");
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Failed To Send Keys To Text Input.");
+                    return false;
+                }
+
+                var (submitButtonClicked, _) = ClickElementHelper.TryToClickWithConsoleLogs(_driver, "Submit Search Button", TimeSpan.FromSeconds(2), 
+                    _ => _.FindElement(By.XPath("//form[@role='search']/div/button")));
+
+                return submitButtonClicked;
             }
             catch (Exception e)
             {
@@ -115,56 +108,37 @@ namespace DisneyStoreScraper
         {
             try
             {
-                var xPathForFilterButton = "//div[@class='search__filter_sort']/button[@name='search__filter_btn']";
+                var (filterButtonFound, _) = ClickElementHelper.TryToClickWithConsoleLogs(_driver, "Filter Button", TimeSpan.FromSeconds(2), 
+                    _ => _.FindElement(By.XPath("//div[@class='search__filter_sort']/button[@name='search__filter_btn']")));
 
-                Console.WriteLine("Searching For Filter Button.");
-                var (filterButtonFound, filterButtonElement) = _driver.WaitToGetWebElement(TimeSpan.FromSeconds(2), _ => _.FindElement(By.XPath(xPathForFilterButton)));
-                Console.WriteLine($"Filter Button Found: {filterButtonFound}");
-
-                if (filterButtonFound)
+                if (!filterButtonFound)
                 {
-                    Console.WriteLine("Clicking Filter Button.");
-                    new Actions(_driver).Click(filterButtonElement).Perform();
-
-                    var xPathForProductTypeFilterButton = "//div[@class='refinements']/div/header/button[@title='Product Type']";
-
-                    Console.WriteLine("Searching For 'Product Type' Filter Button");
-                    var (productTypeButtonFound, productTypeButtonElement) = _driver.WaitToGetWebElement(TimeSpan.FromSeconds(2), _ => _.FindElement(By.XPath(xPathForProductTypeFilterButton)));
-                    Console.WriteLine($"'Product Type' Filter Button Found: {productTypeButtonFound}");
-
-                    if (productTypeButtonFound)
-                    {
-                        Console.WriteLine("Clicking Product Type Filter Button.");
-                        new Actions(_driver).Click(productTypeButtonElement).Perform();
-
-                        var xPathForProductType = $"//div[@id='refinement--producttype']/ul/li[@data-filter-name='{productType}']/button";
-
-                        Console.WriteLine($"Searching for Product Type Filter For '{productType}'");
-                        var (productTypeFound, productTypeElement) = _driver.WaitToGetWebElement(TimeSpan.FromSeconds(2), _ => _.FindElement(By.XPath(xPathForProductType)));
-                        Console.WriteLine($"'{productType}' Filter Found: {productTypeFound}");
-
-                        if (productTypeFound)
-                        {
-                            Console.WriteLine($"Clicking Product Type Filter For Product Type: {productType}");
-                            new Actions(_driver ).Click(productTypeElement).Perform();
-
-                            //TODO: Close Filters
-                            return true;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Not able to find button for Product Type: {productType}");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Not able to find product type filter button.");
-                    }
+                    return false;
                 }
-                else
+
+                var (productTypeFilterFound, _) = ClickElementHelper.TryToClickWithConsoleLogs(_driver, "Product Type Filter", TimeSpan.FromSeconds(2),
+                    _ => _.FindElement(By.XPath("//div[@class='refinements']/div/header/button[@title='Product Type']")));
+
+                if (!productTypeFilterFound)
                 {
-                    Console.WriteLine("Not able to find filter button.");
+                    return false;
                 }
+
+                var (specificProductTypeFilterFound, _) = ClickElementHelper.TryToClickWithConsoleLogs(_driver, $"Specific Product Type Filter: {productType}", TimeSpan.FromSeconds(2),
+                    _ => _.FindElement(By.XPath($"//div[@id='refinement--producttype']/ul/li[@data-filter-name='{productType}']/button")));
+
+                if (!specificProductTypeFilterFound)
+                {
+                    return false;
+                }
+
+                // wait for clear filters button to be visible before trying to move forward
+                _driver.WaitToGetWebElement(TimeSpan.FromSeconds(2), _ => _.FindElement(By.ClassName("clear-filters")));
+
+                var (seeProductsButtonClicked, _) = ClickElementHelper.TryToClickWithConsoleLogs(_driver, "See Products Button", TimeSpan.FromSeconds(2),
+                    _ => _.FindElement(By.ClassName("see-products")));
+
+                return seeProductsButtonClicked;
             }
             catch (Exception e)
             {
@@ -175,5 +149,43 @@ namespace DisneyStoreScraper
 
             return false;
         }
+
+        public DisneyProduct ScrapeProductFromPage(string url)
+        {
+            _driver.Navigate().GoToUrl(url);
+            Console.WriteLine($"\nMoving To Product Page: {url}");
+
+            Console.WriteLine("Scrolling Down.");
+            var amountToScroll = _driver.Manage().Window.Size.Height / 2;
+            new Actions(_driver).ScrollByAmount(0, amountToScroll).Perform();
+
+            ClickElementHelper.TryToClickWithConsoleLogs(_driver, "Popup", TimeSpan.FromSeconds(10), _ => _.FindElement(By.ClassName("dw-modal__close")));
+
+            Console.WriteLine("Scraping Data");
+
+            var productDetailContent = _driver.FindElement(By.XPath("//div[@class='product-detail-content-section']"));
+
+            var name = productDetailContent.FindElement(By.ClassName("product-name")).Text;
+
+            var price = productDetailContent.FindElement(By.ClassName("price")).Text;
+
+            string rating;
+            try
+            {
+                rating = productDetailContent.FindElement(By.XPath("//div[@class='ratings']/div/div/div/div[2]")).GetAttribute("textContent");
+            }
+            catch (NoSuchElementException)
+            {
+                rating = "No Ratings Found";
+            }
+
+            var product = new DisneyProduct(url, name, price, rating);
+
+            return product;
+        }
     }
 }
+
+/*
+ <div class="bv_avgRating_component_container notranslate">4.6</div>
+ */
